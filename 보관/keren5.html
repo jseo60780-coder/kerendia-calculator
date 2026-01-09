@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>케렌디아 급여 적용 확인</title>
+
+  <style>
+    :root{
+      --text:#1f2937;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+
+      --brand:#C8102E;
+      --brand2:#9B0F24;
+
+      /* 시안 배경 톤 */
+      --bg1:#f7eef1;
+      --bg2:#ead3db;
+      --bg3:#d2a9b9;
+
+      /* 시안 버튼 핑크 */
+      --hot:#c4006f;
+      --hot2:#a7005f;
+
+      --radius: 22px;
+      --radius2: 18px;
+
+      --shadow: 0 18px 60px rgba(17,24,39,.12);
+      --shadow2: 0 26px 90px rgba(17,24,39,.16);
+
+      --focus: 0 0 0 4px rgba(196,0,111,.14);
+
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      min-height:100vh;
+      padding: 12px 16px 40px;
+
+      background:
+        radial-gradient(circle at 18% 10%, rgba(196,0,111,0.10), transparent 52%),
+        radial-gradient(circle at 88% 22%, rgba(196,0,111,0.08), transparent 55%),
+        linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 55%, var(--bg3) 100%);
+    }
+
+    .wrap{max-width:1120px;margin:0 auto;}
+
+    /* ===== 상단(유지) ===== */
+    .topbar{
+      display:flex;align-items:flex-start;justify-content:space-between;
+      margin: 10px 0 10px;gap:12px;
+    }
+    .brand{display:flex;align-items:center;gap:14px;}
+    .logo-img{height:50px;width:auto;display:block;}
+    .title h1{margin:0;font-size:22px;letter-spacing:-.02em}
+    .title p{margin:6px 0 0;color:var(--muted);font-size:12px}
+
+    /* Stepper (유지) */
+    .sticky-stepper{
+      position: sticky; top: 0; z-index: 50;
+      margin: 10px 0 16px; padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(229,231,235,.9);
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 30px rgba(17,24,39,.08);
+    }
+    .steps{display:flex;align-items:center;gap:14px;justify-content:center}
+    .step{
+      display:flex;align-items:center;gap:10px;
+      color:var(--muted);font-size:13px;
+      padding: 6px 10px;border-radius: 999px;
+    }
+    .dot{
+      width:26px;height:26px;border-radius:999px;
+      display:grid;place-items:center;
+      border:1px solid var(--line);background:#fff;
+      font-weight:800;color:var(--muted);
+    }
+    .step.active{color:#111827}
+    .step.active .dot{
+      border-color:rgba(196,0,111,.55);
+      background:rgba(196,0,111,.10);
+      color:#7f1d1d;
+    }
+    .connector{width:56px;height:2px;background:rgba(229,231,235,.9);border-radius:999px;}
+    @media (max-width: 860px){ .connector{display:none} }
+
+    /* ===== 공통 Shell ===== */
+    .shell{
+      background: rgba(255,255,255,.52);
+      border: 1px solid rgba(255,255,255,.55);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+    }
+    .content{padding:22px;}
+
+    /* ===== 공통 UI ===== */
+    label{display:block;font-size:12px;color:#374151;margin:10px 0 6px;font-weight:600;}
+    input,select,textarea{
+      width:100%;
+      padding:12px 12px;
+      border:1px solid rgba(229,231,235,.95);
+      border-radius:12px;
+      outline:none;
+      background:#fff;
+      font-size:14px;
+    }
+    input:focus,select:focus,textarea:focus{box-shadow:var(--focus);border-color:rgba(196,0,111,.45)}
+    textarea{min-height:150px;font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-size:13px}
+
+    .btn{
+      border:1px solid rgba(229,231,235,.95);
+      background:#fff;color:#111827;border-radius:14px;
+      padding:11px 14px;font-weight:800;cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;
+      transition:.2s;
+    }
+    .btn:hover:not(:disabled){transform: translateY(-2px);}
+    .btn.primary{
+      background:linear-gradient(135deg,var(--brand),var(--brand2));
+      color:#fff;border:none;
+    }
+    .btn.primary:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+
+    .badge{
+      display:inline-flex;padding:6px 12px;border-radius:999px;
+      font-size:12px;font-weight:800;border:1px solid var(--line);
+    }
+    .badge.good{background:#ecfdf5;color:#065f46;border-color:rgba(16,185,129,.35);}
+    .badge.bad{background:#fef2f2;color:#991b1b;border-color:rgba(239,68,68,.35);}
+
+    /* ===== 카드/그리드 (Step1/2) ===== */
+    .grid{display:grid;grid-template-columns: 1fr 1fr;gap:16px;}
+    @media (max-width: 860px){ .grid{grid-template-columns:1fr} }
+    .card{
+      background:#fff;border:1px solid rgba(229,231,235,.95);
+      border-radius:var(--radius2);padding:18px;
+      box-shadow: 0 10px 28px rgba(17,24,39,.06);
+    }
+
+    /* =========================================================
+       STEP 0 (시안 그대로)
+       ========================================================= */
+    .hero-wrap{ padding: 22px; }
+
+    .hero-shell{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      border-radius: 34px;
+      overflow:hidden;
+
+      /* 시안 느낌의 한 덩어리 */
+      background: linear-gradient(135deg, rgba(255,255,255,.42), rgba(255,255,255,.18));
+      box-shadow: var(--shadow2);
+      min-height: 520px;
+      position: relative;
+    }
+    @media (max-width: 980px){
+      .hero-shell{grid-template-columns: 1fr; min-height:auto;}
+    }
+
+    /* 좌: 포스터 영역 */
+    .hero-left{
+      padding: 34px 24px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(255,255,255,.06);
+    }
+
+    /* 포스터 카드(시안처럼) */
+    .poster-frame{
+      width: min(360px, 100%);
+      aspect-ratio: 3 / 4;           /* ✅ 시안 같은 세로 포스터 비율 */
+      background: rgba(255,255,255,.72);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 18px 55px rgba(17,24,39,.16);
+      border: 1px solid rgba(255,255,255,.7);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .poster-frame img{
+      width:100%;
+      height:100%;
+      object-fit: contain;           /* ✅ 절대 안 잘림 */
+      display:block;
+      border-radius: 16px;
+    }
+
+    /* 우: 미니 폼 */
+    .hero-right{
+      padding: 34px 28px;
+      display:flex;
+      align-items:center;            /* ✅ 시안처럼 가운데 */
+      justify-content:flex-start;
+      background: rgba(255,255,255,.04);
+    }
+
+    .mini-form{
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .mini-form h3{
+      margin: 0 0 6px;
+      font-size: 18px;
+      letter-spacing: -.01em;
+    }
+    .mini-form .desc{
+      margin: 0 0 18px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* 입력칸을 시안처럼 “낮고 넓게” */
+    .mini-form input,
+    .mini-form select{
+      height: 42px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.88);
+    }
+
+    /* 시안 버튼(핫핑크) */
+    .btn-hot{
+      width:100%;
+      margin-top: 16px;
+      height: 44px;
+      border-radius: 10px;
+      border:none;
+      color:#fff;
+      font-weight: 900;
+      font-size: 15px;
+      background: linear-gradient(135deg, var(--hot), var(--hot2));
+      cursor:pointer;
+      box-shadow: 0 14px 28px rgba(196,0,111,.18);
+    }
+    .btn-hot:disabled{opacity:.5; cursor:not-allowed; box-shadow:none;}
+
+    .mini-form .hint{
+      margin: 10px 0 0;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* 우하단 작은 별(시안 느낌) */
+    .sparkle{
+      position:absolute;
+      right: 24px;
+      bottom: 22px;
+      width: 24px;
+      height: 24px;
+      opacity: .25;
+      transform: rotate(10deg);
+      filter: blur(.2px);
+      pointer-events:none;
+    }
+
+    /* Step2 KPI */
+    .kpi{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+    .kpi .box{
+      padding:14px;border-radius:16px;
+      border:1px solid rgba(229,231,235,.92);
+      background: rgba(249,250,251,.8);
+    }
+    .kpi .k{font-size:12px;color:var(--muted);}
+    .kpi .v{font-size:22px;font-weight:950;margin-top:6px;line-height:1.15;}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <!-- ===== 상단 유지 ===== -->
+    <div class="topbar">
+      <div class="brand">
+        <img src="kerendia-logo-transparent.png" alt="Kerendia" class="logo-img">
+        <div class="title">
+          <h1>케렌디아 급여 적용 확인</h1>
+          <p>CKD-EPI 2021 Equation 기반 eGFR 계산</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="sticky-stepper">
+      <div class="steps">
+        <div class="step active" id="step0Chip"><span class="dot">0</span> 시작</div>
+        <div class="connector"></div>
+        <div class="step" id="step1Chip"><span class="dot">1</span> 추가 입력</div>
+        <div class="connector"></div>
+        <div class="step" id="step2Chip"><span class="dot">2</span> 결과</div>
+      </div>
+    </div>
+
+    <div class="shell">
+      <div class="content">
+
+        <!-- ===================== STEP 0 ===================== -->
+        <div id="step0">
+          <div class="hero-wrap">
+            <div class="hero-shell">
+
+              <div class="hero-left">
+                <div class="poster-frame">
+                  <img src="with-kerendia-hero-pink.png" alt="케렌디아 포스터">
+                </div>
+              </div>
+
+              <div class="hero-right">
+                <div class="mini-form">
+                  <h3>기본 정보 입력</h3>
+                  <p class="desc">성별과 나이를 입력하면 시작할 수 있습니다.</p>
+
+                  <label>성별</label>
+                  <select id="gender0" onchange="updateStartUI()">
+                    <option value="">선택하세요</option>
+                    <option value="male">남성</option>
+                    <option value="female">여성</option>
+                  </select>
+
+                  <label>나이</label>
+                  <input type="number" id="age0" placeholder="예: 62" oninput="updateStartUI()">
+
+                  <button class="btn-hot" id="goExtraBtn" disabled onclick="goStep1()">
+                    급여대상 확인하기
+                  </button>
+
+                  <p id="startHint" class="hint">성별과 나이를 모두 입력해 주세요.</p>
+                </div>
+              </div>
+
+              <!-- 작은 별 -->
+              <svg class="sparkle" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l1.5 6.2L20 10l-6.5 1.8L12 18l-1.5-6.2L4 10l6.5-1.8L12 2z" fill="#ffffff"/>
+              </svg>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== STEP 1 ===================== -->
+        <div id="step1" style="display:none;">
+          <div class="grid">
+            <div class="card">
+              <h3 style="margin:0 0 10px;">기본 정보 (고정)</h3>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                <div><label>성별</label><input id="genderFixed" readonly></div>
+                <div><label>나이</label><input id="ageFixed" readonly></div>
+              </div>
+
+              <hr style="margin:18px 0; border:0; border-top:1px solid #eee">
+
+              <h3 style="margin:0 0 10px;">검사 수치</h3>
+              <label>혈청 크레아티닌 (mg/dL)</label>
+              <input id="creatinine" type="number" step="0.1" placeholder="예: 1.2" oninput="updateExtraUI()">
+
+              <label>칼륨 (mmol/L)</label>
+              <input id="potassium" type="number" step="0.1" placeholder="예: 4.5" oninput="updateExtraUI()">
+
+              <button class="btn" onclick="goStep(0)" style="margin-top:16px">이전으로</button>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px;">단백뇨 및 동반 질환</h3>
+
+              <label>검사 방법</label>
+              <select id="proteinTest" onchange="toggleProteinInput()">
+                <option value="dipstick">Dipstick (요 시험지봉)</option>
+                <option value="uacr">uACR (요알부민/크레아티닌비)</option>
+              </select>
+
+              <div id="dipstickWrap">
+                <label>Dipstick 결과</label>
+                <select id="dipstick" onchange="updateExtraUI()">
+                  <option value="">선택하세요</option>
+                  <option value="negative">음성 (-)</option>
+                  <option value="1plus">1+</option>
+                  <option value="2plus">2+</option>
+                  <option value="3plus">3+</option>
+                </select>
+              </div>
+
+              <div id="uacrWrap" style="display:none">
+                <label>uACR (mg/g)</label>
+                <input id="uacr" type="number" placeholder="예: 350" oninput="updateExtraUI()">
+              </div>
+
+              <label>제2형 당뇨병 여부</label>
+              <select id="diabetes" onchange="updateExtraUI()">
+                <option value="">선택하세요</option>
+                <option value="yes">예</option>
+                <option value="no">아니오</option>
+              </select>
+
+              <label>표준요법(ACE/ARB) 4주 이상 투여</label>
+              <select id="aceArb" onchange="updateExtraUI()">
+                <option value="">선택하세요</option>
+                <option value="yes">예</option>
+                <option value="no">아니오</option>
+              </select>
+
+              <button class="btn primary" id="goResultBtn" disabled onclick="calculateAndShow()" style="margin-top:16px; width:100%">
+                결과 확인하기
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== STEP 2 ===================== -->
+        <div id="step2" style="display:none;">
+          <div class="card">
+            <h2 style="margin:0 0 10px;">판정 결과</h2>
+            <div id="resultBadge" class="badge">계산 중...</div>
+
+            <div class="kpi">
+              <div class="box">
+                <div class="k">계산된 eGFR</div>
+                <div class="v" id="egfrView">-</div>
+              </div>
+              <div class="box">
+                <div class="k">참고 상병코드</div>
+                <div class="v" id="codeView">-</div>
+              </div>
+            </div>
+
+            <div style="margin-top:18px">
+              <label>심사기준 요약문</label>
+              <textarea id="summaryText" readonly></textarea>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+              <button class="btn" onclick="goStep(1)">수정하기</button>
+              <button class="btn primary" onclick="location.reload()">새로 시작</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const state = { gender: "", age: 0 };
+
+    function goStep(idx) {
+      $("step0").style.display = idx === 0 ? "block" : "none";
+      $("step1").style.display = idx === 1 ? "block" : "none";
+      $("step2").style.display = idx === 2 ? "block" : "none";
+
+      $("step0Chip").classList.toggle("active", idx === 0);
+      $("step1Chip").classList.toggle("active", idx === 1);
+      $("step2Chip").classList.toggle("active", idx === 2);
+
+      window.scrollTo(0,0);
+    }
+
+    function updateStartUI() {
+      const g = $("gender0").value;
+      const a = $("age0").value;
+      const ok = (g !== "" && a !== "");
+      $("goExtraBtn").disabled = !ok;
+      $("startHint").textContent = ok ? "준비되었습니다. 버튼을 눌러주세요." : "성별과 나이를 모두 입력해 주세요.";
+    }
+
+    function goStep1() {
+      state.gender = $("gender0").value;
+      state.age = parseInt($("age0").value, 10);
+
+      $("genderFixed").value = state.gender === "male" ? "남성" : "여성";
+      $("ageFixed").value = state.age + "세";
+
+      goStep(1);
+    }
+
+    function toggleProteinInput() {
+      const isDip = $("proteinTest").value === "dipstick";
+      $("dipstickWrap").style.display = isDip ? "block" : "none";
+      $("uacrWrap").style.display = isDip ? "none" : "block";
+      updateExtraUI();
+    }
+
+    function updateExtraUI() {
+      const scr = $("creatinine").value;
+      const k = $("potassium").value;
+      const db = $("diabetes").value;
+      const ace = $("aceArb").value;
+
+      let protOk = false;
+      if ($("proteinTest").value === "dipstick") protOk = $("dipstick").value !== "";
+      else protOk = $("uacr").value !== "";
+
+      const ok = (scr && k && db && ace && protOk);
+      $("goResultBtn").disabled = !ok;
+    }
+
+    function calcEGFR(gender, age, scr) {
+      const kappa = (gender === "female") ? 0.7 : 0.9;
+      const alpha = (gender === "female") ? -0.241 : -0.302;
+      const genderMod = (gender === "female") ? 1.012 : 1.0;
+
+      const minScr = Math.min(scr / kappa, 1);
+      const maxScr = Math.max(scr / kappa, 1);
+
+      const egfr = 142 * Math.pow(minScr, alpha) * Math.pow(maxScr, -1.200) * Math.pow(0.9938, age) * genderMod;
+      return Math.round(egfr);
+    }
+
+    function calculateAndShow() {
+      const scr = parseFloat($("creatinine").value);
+      const k = parseFloat($("potassium").value);
+      const db = $("diabetes").value === "yes";
+      const ace = $("aceArb").value === "yes";
+      const egfr = calcEGFR(state.gender, state.age, scr);
+
+      const isEligible = (db && ace && egfr >= 25 && k <= 4.8);
+
+      $("egfrView").textContent = egfr + " mL/min/1.73㎡";
+      $("codeView").textContent = egfr < 60 ? "N18.3" : "N18.2";
+
+      const badge = $("resultBadge");
+      if (isEligible) {
+        badge.textContent = "급여 인정 기준 충족";
+        badge.className = "badge good";
+        $("summaryText").value =
+          `[급여 적정]\n- eGFR: ${egfr}\n- 칼륨: ${k}\n- 제2형 당뇨병: 예\n- ACE/ARB 4주 이상: 예\n\n→ 기준 충족`;
+      } else {
+        badge.textContent = "급여 불충족 / 확인 필요";
+        badge.className = "badge bad";
+        $("summaryText").value =
+          `[급여 주의]\n- eGFR: ${egfr}\n- 칼륨: ${k}\n- 제2형 당뇨병: ${db ? "예" : "아니오"}\n- ACE/ARB 4주 이상: ${ace ? "예" : "아니오"}\n\n→ 기준 미달 항목이 있습니다.`;
+      }
+
+      goStep(2);
+    }
+  </script>
+</body>
+</html>

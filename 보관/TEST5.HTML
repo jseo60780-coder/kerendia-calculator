@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>결과 확인 플로우 (멀티스텝)</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --text:#111827; --muted:#6b7280;
+      --card:#ffffff; --border:#e5e7eb;
+      --primary:#f59e0b; --primary2:#fb923c; /* 오렌지 톤 */
+      --shadow: 0 18px 60px rgba(17,24,39,0.14);
+      --radius: 22px;
+      --okbg:#ecfdf5; --ok:#065f46;
+      --nobg:#fef2f2; --no:#991b1b;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:"Noto Sans KR", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      color:var(--text);
+      min-height:100vh;
+      background:
+        radial-gradient(900px 500px at 20% 25%, rgba(255,255,255,0.75), transparent),
+        radial-gradient(900px 500px at 85% 18%, rgba(255,255,255,0.55), transparent),
+        radial-gradient(800px 500px at 90% 90%, rgba(255,255,255,0.35), transparent),
+        linear-gradient(180deg, #ffe8d1 0%, #ffb45f 50%, #ff8a00 100%);
+      padding: 36px 18px;
+    }
+
+    .shell{
+      max-width: 1080px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .topbar{
+      padding: 20px 22px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight: 900;
+      letter-spacing:-0.2px;
+    }
+    .logo{
+      width:38px; height:38px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      box-shadow: 0 12px 30px rgba(245,158,11,0.35);
+    }
+    .sub{
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+
+    .content{
+      padding: 10px 22px 26px;
+    }
+
+    /* Stepper */
+    .stepper{
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+      justify-content:center;
+      padding: 2px 0 16px;
+    }
+    .step{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+      min-width: 130px;
+      position: relative;
+      padding: 0 10px;
+    }
+    .dot{
+      width: 26px; height: 26px;
+      border-radius: 999px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight: 900;
+      font-size: 12px;
+      border: 2px solid rgba(17,24,39,0.12);
+      background: #fff;
+      color: var(--muted);
+    }
+    .step.active .dot{
+      border-color: rgba(245,158,11,0.55);
+      box-shadow: 0 0 0 6px rgba(245,158,11,0.15);
+      color: #111827;
+    }
+    .step.done .dot{
+      border-color: rgba(6,95,70,0.25);
+      background: rgba(236,253,245,0.85);
+      color: #065f46;
+    }
+    .label{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .step.active .label{ color:#111827; }
+
+    .line{
+      position:absolute;
+      top: 12px;
+      left: 100%;
+      width: 110px;
+      height: 2px;
+      background: rgba(17,24,39,0.10);
+    }
+    .step:last-child .line{ display:none; }
+    .step.done .line{
+      background: rgba(6,95,70,0.28);
+    }
+
+    /* Panels */
+    .panel{
+      display:none;
+    }
+    .panel.active{
+      display:block;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+      align-items:start;
+    }
+    @media (max-width: 900px){
+      .grid{ grid-template-columns:1fr; }
+    }
+
+    .card{
+      background: #fff;
+      border: 1px solid rgba(229,231,235,0.9);
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(17,24,39,0.08);
+      overflow:hidden;
+    }
+    .card-head{
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(229,231,235,0.9);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(245,158,11,0.12), rgba(255,255,255,0));
+    }
+    .card-title{
+      margin:0;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing:-0.2px;
+    }
+    .badge{
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(229,231,235,0.95);
+      color: var(--muted);
+      font-weight: 800;
+      background: rgba(255,255,255,0.75);
+      white-space:nowrap;
+    }
+    .card-body{ padding: 16px; }
+
+    h1{
+      margin: 0 0 8px;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing:-0.5px;
+    }
+    .desc{
+      margin:0;
+      color:var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      line-height:1.6;
+    }
+
+    /* form */
+    .section{ margin-top: 14px; }
+    .sectionTitle{
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 900;
+      color:#374151;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 560px){ .row{ grid-template-columns:1fr; } }
+
+    label{
+      display:block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      color:#374151;
+    }
+    .field{
+      width:100%;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(229,231,235,0.95);
+      outline:none;
+      font-size: 14px;
+      transition: box-shadow .15s, border-color .15s;
+    }
+    .field:focus{
+      border-color: rgba(245,158,11,0.55);
+      box-shadow: 0 0 0 6px rgba(245,158,11,0.14);
+    }
+    .hint{
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      line-height:1.6;
+    }
+
+    .btn{
+      width:100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: none;
+      cursor:pointer;
+      font-weight: 900;
+      font-size: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color:#111827;
+      transition: transform .06s, opacity .15s;
+    }
+    .btn:hover{ opacity: 0.95; }
+    .btn:active{ transform: translateY(1px); }
+    .btn:disabled{ opacity: 0.55; cursor:not-allowed; }
+    .btnGhost{
+      background:#fff;
+      border: 1px solid rgba(229,231,235,0.95);
+      color:#111827;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 12px;
+    }
+    .actions .btn{ flex:1; }
+    .actions .btnGhost{ flex:1; }
+
+    /* Result */
+    .resultBox{
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(229,231,235,0.95);
+      background: #fff;
+    }
+    .status{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .status h3{
+      margin:0;
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing:-0.4px;
+    }
+    .pill{
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid rgba(0,0,0,0.08);
+      white-space:nowrap;
+    }
+    .pill.ok{ background: var(--okbg); color: var(--ok); }
+    .pill.no{ background: var(--nobg); color: var(--no); }
+
+    .kpiItem{
+      margin-top: 10px;
+      background:#f9fafb;
+      border: 1px solid rgba(229,231,235,0.9);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .kpiLabel{ margin:0 0 4px; font-size: 12px; color: var(--muted); font-weight: 800;}
+    .kpiValue{ margin:0; font-size: 22px; font-weight: 900; letter-spacing:-0.4px; }
+    .smallActions{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    @media (max-width: 560px){ .smallActions{ grid-template-columns:1fr; } }
+
+    .toast{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid rgba(229,231,235,0.95);
+      display:none;
+    }
+    .toast.show{ display:block; }
+    .toast.ok{ background: var(--okbg); color: var(--ok); }
+    .toast.no{ background: var(--nobg); color: var(--no); }
+
+    /* Modal */
+    .modalOverlay{
+      position: fixed; inset: 0;
+      background: rgba(17,24,39,0.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      z-index: 100;
+    }
+    .modalOverlay.show{ display:flex; }
+    .modal{
+      width: min(920px, 96vw);
+      background:#fff;
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      overflow:hidden;
+      border: 1px solid rgba(229,231,235,0.8);
+    }
+    .modalHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(229,231,235,0.85);
+      background: linear-gradient(180deg, rgba(245,158,11,0.18), rgba(255,255,255,0));
+    }
+    .modalTitle{
+      margin:0;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing:-0.2px;
+    }
+    .modalClose{
+      border: none;
+      background:#111827;
+      color:#fff;
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight: 900;
+      font-size: 12px;
+    }
+    .modalBody{ padding: 14px 16px 18px; }
+    .modalBody img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius: 14px;
+      border: 1px solid rgba(229,231,235,0.9);
+      background:#f9fafb;
+    }
+    .modalHint{
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-weight: 700;
+      white-space: pre-line;
+    }
+
+    /* Print summary only */
+    #printArea{ display:none; }
+    @media print{
+      body{ background:#fff; padding:0; }
+      .shell{ display:none !important; }
+      #printArea{ display:block !important; padding: 16mm; }
+      .printCard{
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        padding: 14px 14px;
+        font-family:"Noto Sans KR", Arial, sans-serif;
+        color:#111827;
+      }
+      .printTitle{
+        font-size: 18px;
+        font-weight: 900;
+        margin: 0 0 8px;
+      }
+      .printMeta{
+        font-size: 12px;
+        color:#374151;
+        margin: 0 0 10px;
+        line-height: 1.6;
+        white-space: pre-line;
+      }
+      .printSectionTitle{
+        font-size: 13px;
+        font-weight: 900;
+        margin: 12px 0 6px;
+      }
+      .printText{
+        font-size: 12px;
+        line-height: 1.75;
+        margin: 0;
+        white-space: pre-line;
+      }
+      .printHr{
+        height:1px;
+        background:#e5e7eb;
+        margin: 12px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <div style="font-size:14px;">결과 확인 플로우</div>
+        <div class="sub">예쁜 멀티스텝 UI (단일 HTML)</div>
+      </div>
+    </div>
+    <div class="sub">Demo v2</div>
+  </div>
+
+  <div class="content">
+    <div class="stepper" id="stepper">
+      <div class="step active" data-step="1">
+        <div class="dot">1</div><div class="label">기본 입력</div><div class="line"></div>
+      </div>
+      <div class="step" data-step="2">
+        <div class="dot">2</div><div class="label">결과 확인</div><div class="line"></div>
+      </div>
+      <div class="step" data-step="3">
+        <div class="dot">3</div><div class="label">요약/출력</div>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <section class="panel active" id="panel1">
+      <div class="grid">
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title">기본 입력</h2>
+            <span class="badge">필수 입력 후 다음 단계</span>
+          </div>
+          <div class="card-body">
+            <h1>급여/판정 결과 확인 준비</h1>
+            <p class="desc">입력값을 채우고 <b>“급여 결과 확인하기”</b>를 누르면 다음 화면(결과)로 넘어갑니다.</p>
+
+            <div class="section">
+              <div class="sectionTitle">기본 정보</div>
+              <div class="row">
+                <div>
+                  <label>성별</label>
+                  <select class="field" id="gender">
+                    <option value="">선택하세요</option>
+                    <option value="male">남성</option>
+                    <option value="female">여성</option>
+                  </select>
+                </div>
+                <div>
+                  <label>나이</label>
+                  <input class="field" type="number" id="age" placeholder="예: 60">
+                  <div class="hint">정수 입력 권장</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="sectionTitle">검사 수치</div>
+              <div class="row">
+                <div>
+                  <label>혈청 크레아티닌 (mg/dL)</label>
+                  <input class="field" type="number" id="creatinine" step="0.1" placeholder="예: 1.2">
+                </div>
+                <div>
+                  <label>칼륨 (mmol/L)</label>
+                  <input class="field" type="number" id="potassium" step="0.1" placeholder="예: 4.5">
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="sectionTitle">단백뇨/알부민뇨</div>
+              <div class="row">
+                <div>
+                  <label>검사 방법</label>
+                  <select class="field" id="proteinTest" onchange="toggleProteinInputs()">
+                    <option value="dipstick">요 시험지봉 검사 (Dipstick)</option>
+                    <option value="uacr">uACR (mg/g)</option>
+                  </select>
+                </div>
+                <div id="dipstickWrap">
+                  <label>Dipstick 결과</label>
+                  <select class="field" id="dipstick">
+                    <option value="">선택하세요</option>
+                    <option value="negative">음성 (-)</option>
+                    <option value="trace">약양성 (±)</option>
+                    <option value="1plus">1+</option>
+                    <option value="2plus">2+</option>
+                    <option value="3plus">3+</option>
+                  </select>
+                </div>
+                <div id="uacrWrap" style="display:none;">
+                  <label>uACR (mg/g)</label>
+                  <input class="field" type="number" id="uacr" step="0.1" placeholder="예: 350">
+                </div>
+              </div>
+              <div class="hint">Dipstick은 1+ 이상, uACR은 300 mg/g 초과를 기준으로 체크합니다.</div>
+            </div>
+
+            <div class="section">
+              <div class="sectionTitle">추가 조건</div>
+              <div class="row">
+                <div>
+                  <label>제2형 당뇨병</label>
+                  <select class="field" id="diabetes">
+                    <option value="">선택하세요</option>
+                    <option value="yes">예</option>
+                    <option value="no">아니오</option>
+                  </select>
+                </div>
+                <div>
+                  <label>ACE억제제/ARB 4주 이상</label>
+                  <select class="field" id="aceArb">
+                    <option value="">선택하세요</option>
+                    <option value="yes">예</option>
+                    <option value="no">아니오</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row" style="margin-top:12px;">
+                <div>
+                  <label>만성 심부전 (NYHA II~IV)</label>
+                  <select class="field" id="heartFailure">
+                    <option value="">선택하세요</option>
+                    <option value="yes">예</option>
+                    <option value="no">아니오</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn" onclick="goToResult()">급여 결과 확인하기</button>
+              <button class="btn btnGhost" onclick="resetAll()">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title">안내</h2>
+            <span class="badge">Step 1</span>
+          </div>
+          <div class="card-body">
+            <h1 style="font-size:18px;">이 화면은 “가입폼” 스타일</h1>
+            <p class="desc">입력 → 결과 → 요약/출력으로 흐름이 자연스럽게 이어지도록 구성했습니다.</p>
+
+            <div class="kpiItem" style="margin-top:12px;">
+              <p class="kpiLabel">다음 단계에서 제공</p>
+              <p class="kpiValue" style="font-size:16px;">적용 가능/불가, 요약, 복사, PDF</p>
+              <div class="hint">버튼을 누르면 “페이지 이동”처럼 전환됩니다.</div>
+            </div>
+
+            <div class="kpiItem" style="margin-top:10px;">
+              <p class="kpiLabel">팁</p>
+              <div class="desc" style="margin-top:6px;">
+                • 색/폰트/여백 통일 = 웹사이트 느낌 핵심<br/>
+                • Stepper(진행바) = “제품”처럼 보이게 함<br/>
+                • 결과에 액션(복사/PDF/후기) = 실사용 감성
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="panel" id="panel2">
+      <div class="grid">
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title">결과 확인</h2>
+            <span class="badge">Step 2</span>
+          </div>
+          <div class="card-body">
+            <h1>판정 결과</h1>
+            <p class="desc">입력값 기반으로 eGFR 계산 및 적용 가능 여부를 표시합니다.</p>
+
+            <div id="result" class="resultBox" style="margin-top:14px;">
+              <div class="status">
+                <h3>대기 중</h3>
+                <span class="pill">계산 전</span>
+              </div>
+              <div class="kpiItem">
+                <p class="kpiLabel">안내</p>
+                <p class="desc" style="margin:0;">Step 1에서 값을 입력한 뒤 이 화면으로 넘어오면 자동 계산됩니다.</p>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn btnGhost" onclick="goStep(1)">이전</button>
+              <button class="btn" onclick="goStep(3)">요약/출력으로</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title">빠른 액션</h2>
+            <span class="badge">Step 2</span>
+          </div>
+          <div class="card-body">
+            <div class="smallActions">
+              <button class="btn btnGhost" id="btnReview" onclick="openReviewModal()" disabled>치료 후기</button>
+              <button class="btn btnGhost" id="btnCopy" onclick="copySummary()" disabled>요약 복사</button>
+              <button class="btn" id="btnPdf" onclick="printSummaryOnly()" disabled>요약 PDF</button>
+            </div>
+            <div id="toast" class="toast"></div>
+
+            <div class="kpiItem">
+              <p class="kpiLabel">요약 미리보기</p>
+              <p id="summaryPreview" class="desc" style="margin:0;white-space:pre-line;"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="panel" id="panel3">
+      <div class="grid">
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title">요약/출력</h2>
+            <span class="badge">Step 3</span>
+          </div>
+          <div class="card-body">
+            <h1>의사 전달용 요약</h1>
+            <p class="desc">아래 요약문은 복사해서 다른 시스템(EMR/메모 등)에 붙여넣기 할 수 있습니다.</p>
+
+            <div class="kpiItem" style="margin-top:14px;">
+              <p class="kpiLabel">요약문</p>
+              <pre id="summaryFull" style="margin:0;white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.75;font-weight:700;"></pre>
+            </div>
+
+            <div class="actions">
+              <button class="btn btnGhost" onclick="goStep(2)">이전</button>
+              <button class="btn btnGhost" onclick="copySummary()">요약문 복사</button>
+              <button class="btn" onclick="printSummaryOnly()">요약문 PDF/프린트</button>
+            </div>
+
+            <div class="kpiItem" style="margin-top:12px;">
+              <p class="kpiLabel">환자 복용 주의사항(미리보기)</p>
+              <div class="desc" style="white-space:pre-line;margin-top:6px;" id="precautionsPreview"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title">유틸리티</h2>
+            <span class="badge">Step 3</span>
+          </div>
+          <div class="card-body">
+            <div class="actions" style="margin-top:0;">
+              <button class="btn btnGhost" onclick="resetAll()">새로 시작</button>
+              <button class="btn btnGhost" onclick="openReviewModal()">치료 후기 보기</button>
+            </div>
+
+            <div class="kpiItem">
+              <p class="kpiLabel">메모</p>
+              <p class="desc" style="margin:0;">
+                • Step 2/3는 결과가 있어야 버튼이 활성화됩니다.<br/>
+                • PDF 버튼은 “요약 + 주의사항”만 출력하도록 구성했습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modalOverlay" class="modalOverlay" onclick="closeReviewModal(event)">
+  <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+    <div class="modalHead">
+      <h3 class="modalTitle">치료 후기</h3>
+      <button class="modalClose" onclick="closeReviewModal()">닫기</button>
+    </div>
+    <div class="modalBody">
+      <img src="treatment_review.png" alt="치료 후기 이미지">
+      <div class="modalHint">이미지는 HTML과 같은 폴더에 "treatment_review.png"로 넣어주세요.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Print only -->
+<div id="printArea">
+  <div class="printCard">
+    <div class="printTitle">결과 요약(출력)</div>
+    <div id="printMeta" class="printMeta"></div>
+    <div class="printHr"></div>
+    <div class="printSectionTitle">요약문</div>
+    <p id="printSummary" class="printText"></p>
+    <div class="printHr"></div>
+    <div class="printSectionTitle">환자 복용 주의사항</div>
+    <p id="printPrecautions" class="printText"></p>
+  </div>
+</div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+  let lastResult = null;
+
+  const PRECAUTIONS_TEXT =
+`환자 복용 주의사항:
+- 케렌디아(Finerenone)는 신장 보호 및 심혈관 질환 예방을 위한 약제로,
+  2형 당뇨병과 만성신장병(CKD) 환자에서 사용됩니다.
+
+- 복용 중 고칼륨혈증의 위험이 있으므로 정기적인 혈액검사가 필요합니다.
+- 고칼륨혈증 증상: 근육 약화, 피로감, 무기력, 심장이 두근거리거나 느려지는 느낌(부정맥)
+  이러한 증상이 나타나면 즉시 의료진에게 알리십시오.
+- 고혈압약(RAAS억제제)과 병용 시 전해질 이상을 모니터링해야 합니다.
+- 이상 증상 시 즉시 의료진에 상담하세요.
+- 의사 지시 없이 복용을 중단하거나 증량하지 마세요.
+
+✔ CKD 환자는 정기적인 혈액검사로 혈중 칼륨 농도를 확인하고, 칼륨 섭취 조절이 필요합니다.
+
+🍽 칼륨 섭취를 줄이는 방법:
+ 1. 야채는 끓는 물에 데치기 (채소 무게의 4~5배 이상 물 사용)
+ 2. 얇게 썬 후 찬물에 2시간 담갔다가 물을 버리고 조리
+ 3. 채소 껍질과 줄기 제거 후 섭취
+
+⚠️ 칼륨이 많은 식품 주의:
+ - 감자, 고구마, 토마토, 바나나, 키위, 멜론
+ - 시금치, 미역, 다시마, 콩, 견과류
+ - 초콜릿, 커피, 두유, 주스, 인스턴트국, 홍삼젤리 등
+
+💧 수분 섭취는 신장 상태에 따라 의사와 상담하여 결정하세요.
+(출처: CKD in T2D Awareness Symposium, Kerendia & 종근당)`;
+
+  el('precautionsPreview').textContent = PRECAUTIONS_TEXT;
+
+  function setStepUI(step){
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    el('panel'+step).classList.add('active');
+
+    document.querySelectorAll('.step').forEach(s=>{
+      const n = parseInt(s.getAttribute('data-step'),10);
+      s.classList.remove('active','done');
+      if(n < step) s.classList.add('done');
+      if(n === step) s.classList.add('active');
+    });
+  }
+
+  function goStep(step){
+    if(step === 2 && !lastResult){
+      // Step2는 결과 없이도 볼 수 있지만, UX상 안내
+      showToast('Step 1에서 “급여 결과 확인하기”를 눌러 결과를 생성하세요.', false);
+    }
+    if(step === 3 && !lastResult){
+      showToast('요약/출력은 결과 생성 후 이용 가능합니다.', false);
+      return;
+    }
+    setStepUI(step);
+    if(step === 3 && lastResult){
+      el('summaryFull').textContent = buildSummaryText(lastResult);
+    }
+  }
+
+  function toggleProteinInputs(){
+    const mode = el('proteinTest').value;
+    el('dipstickWrap').style.display = mode === 'dipstick' ? 'block' : 'none';
+    el('uacrWrap').style.display = mode === 'uacr' ? 'block' : 'none';
+  }
+
+  function calculateEGFR(gender, age, creatinine) {
+    const K = gender === 'male' ? 0.9 : 0.7;
+    const alpha = gender === 'male' ? -0.302 : -0.241;
+    const min = Math.min(creatinine / K, 1);
+    const max = Math.max(creatinine / K, 1);
+    let eGFR = 142 * Math.pow(min, alpha) * Math.pow(max, -1.200) * Math.pow(0.9938, age);
+    if (gender === 'female') eGFR *= 1.012;
+    return Math.round(eGFR);
+  }
+
+  function goToResult(){
+    const res = computeResult();
+    lastResult = res;
+    renderResult(res);
+    enableActions(true);
+
+    // Step2로 이동
+    setStepUI(2);
+
+    // Step3 요약 준비
+    el('summaryFull').textContent = buildSummaryText(res);
+
+    // 미리보기
+    el('summaryPreview').textContent = buildSummaryText(res);
+    showToast('결과가 생성되었습니다. (요약 복사/PDF 가능)', true);
+  }
+
+  function computeResult(){
+    const gender = el('gender').value;
+    const age = parseInt(el('age').value, 10);
+    const creatinine = parseFloat(el('creatinine').value);
+    const potassium = parseFloat(el('potassium').value);
+    const diabetes = el('diabetes').value;
+    const aceArb = el('aceArb').value;
+    const heartFailure = el('heartFailure').value;
+    const proteinTest = el('proteinTest').value;
+    const dipstick = el('dipstick').value;
+    const uacrRaw = el('uacr').value;
+    const uacr = uacrRaw === '' ? NaN : parseFloat(uacrRaw);
+
+    let missing = [];
+    if(!gender) missing.push('성별');
+    if(!Number.isFinite(age)) missing.push('나이');
+    if(!Number.isFinite(creatinine)) missing.push('크레아티닌');
+    if(!Number.isFinite(potassium)) missing.push('칼륨');
+    if(!diabetes) missing.push('당뇨병 여부');
+    if(!aceArb) missing.push('ACE/ARB');
+    if(!heartFailure) missing.push('심부전 여부');
+    if(proteinTest === 'dipstick' && !dipstick) missing.push('Dipstick 결과');
+    if(proteinTest === 'uacr' && !Number.isFinite(uacr)) missing.push('uACR');
+
+    let eligible = true;
+    let reasons = [];
+    let diseaseCode = '';
+    let eGFR = null;
+
+    if(missing.length){
+      eligible = false;
+      reasons.push(`필수 입력 누락: ${missing.join(', ')}`);
+    } else {
+      eGFR = calculateEGFR(gender, age, creatinine);
+
+      if (diabetes !== 'yes') { eligible = false; reasons.push('제2형 당뇨병 환자가 아닙니다'); }
+      if (aceArb !== 'yes') { eligible = false; reasons.push('ACE억제제 또는 ARB를 4주 이상 투여하지 않았습니다'); }
+
+      if (eGFR < 25) {
+        eligible = false;
+        reasons.push(`eGFR이 ${eGFR}로 25 미만입니다 (투여 시작 권장 안됨)`);
+      } else if (eGFR >= 75) {
+        eligible = false;
+        reasons.push(`eGFR이 ${eGFR}로 75 이상입니다`);
+      } else {
+        if (eGFR >= 60 && eGFR < 75) diseaseCode = 'N182 (만성신장병 2기)';
+        else if (eGFR >= 30 && eGFR < 60) diseaseCode = 'N183 (만성신장병 3기)';
+        else if (eGFR >= 25 && eGFR < 30) diseaseCode = 'N184 (만성신장병 4기)';
+      }
+
+      if (proteinTest === 'dipstick') {
+        if (dipstick === 'negative' || dipstick === 'trace') {
+          eligible = false;
+          reasons.push('요 시험지봉 검사 결과가 1+ 미만입니다');
+        }
+      } else {
+        if (!Number.isFinite(uacr) || uacr <= 300) {
+          eligible = false;
+          reasons.push('uACR이 300 mg/g 이하입니다');
+        }
+      }
+
+      if (potassium > 4.8) {
+        eligible = false;
+        reasons.push(`칼륨 수치가 ${potassium}로 4.8 mmol/L를 초과합니다`);
+      }
+
+      if (heartFailure === 'yes') {
+        eligible = false;
+        reasons.push('만성 심부전(NYHA class II~IV) 환자는 제외됩니다');
+      }
+    }
+
+    return {
+      eligible, eGFR, diseaseCode, reasons,
+      form:{ gender, age, creatinine, potassium, diabetes, aceArb, heartFailure, proteinTest, dipstick, uacr: (proteinTest==='uacr'? String(uacr) : '') }
+    };
+  }
+
+  function renderResult(res){
+    const title = res.eligible ? '케렌디아 적용 가능' : '케렌디아 적용 불가';
+    const pillClass = res.eligible ? 'ok' : 'no';
+
+    let html = `
+      <div class="status">
+        <h3>${title}</h3>
+        <span class="pill ${pillClass}">${res.eligible ? 'Eligible' : 'Not eligible'}</span>
+      </div>
+      <div class="kpiItem">
+        <p class="kpiLabel">계산된 eGFR</p>
+        <p class="kpiValue">${res.eGFR ?? '-'} <span style="font-size:12px;color:var(--muted);font-weight:800;">mL/min/1.73㎡</span></p>
+      </div>
+    `;
+
+    if(res.diseaseCode){
+      html += `
+        <div class="kpiItem" style="background:#eff6ff;">
+          <p class="kpiLabel">상병코드</p>
+          <p class="desc" style="margin:0;font-weight:900;color:#1e40af;">${escapeHtml(res.diseaseCode)}</p>
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="kpiItem">
+        <p class="kpiLabel">결과 요약</p>
+        <p class="desc" style="margin:0;white-space:pre-line;font-weight:700;">${escapeHtml(buildSummaryText(res))}</p>
+      </div>
+    `;
+
+    if(!res.eligible && res.reasons && res.reasons.length){
+      html += `
+        <div class="kpiItem" style="background:var(--nobg);border-color: rgba(153,27,27,0.15);">
+          <p class="kpiLabel" style="color:var(--no);font-weight:900;">적용 불가 사유</p>
+          <div class="desc" style="white-space:pre-line;margin:0;font-weight:700;">${escapeHtml(res.reasons.join('\n'))}</div>
+        </div>
+      `;
+    }
+
+    el('result').innerHTML = html;
+  }
+
+  function buildSummaryText(res){
+    const f = res.form || {};
+    const sex = (f.gender === 'male') ? '남성' : (f.gender === 'female' ? '여성' : '-');
+    const proteinLine = (f.proteinTest === 'uacr')
+      ? `알부민뇨: uACR ${f.uacr || '-'} mg/g`
+      : `단백뇨: Dipstick ${mapDipstick(f.dipstick)}`;
+
+    let lines = [];
+    lines.push(`판정: ${res.eligible ? '케렌디아 적용 가능' : '케렌디아 적용 불가'}`);
+    lines.push(`eGFR: ${res.eGFR ?? '-'} mL/min/1.73㎡${res.diseaseCode ? ` / ${res.diseaseCode}` : ''}`);
+    lines.push(`기본: ${sex}, ${f.age || '-'}세 / Cr ${f.creatinine || '-'} mg/dL / K ${f.potassium || '-'} mmol/L`);
+    lines.push(`${proteinLine}`);
+    lines.push(`조건: T2D ${yn(f.diabetes)} / ACEi·ARB(≥4주) ${yn(f.aceArb)} / 만성 심부전 ${yn(f.heartFailure)}`);
+
+    if(!res.eligible && res.reasons && res.reasons.length){
+      const top = res.reasons.slice(0, 3).map((r, i) => `${i+1}) ${r}`);
+      lines.push(`불가 사유: ${top.join(' / ')}${res.reasons.length > 3 ? ` (+${res.reasons.length - 3}개)` : ''}`);
+    }
+    return lines.join('\n');
+  }
+
+  function yn(v){ return v==='yes' ? '예' : (v==='no' ? '아니오' : '-'); }
+  function mapDipstick(v){
+    const m = {'negative':'음성(-)','trace':'약양성(±)','1plus':'1+','2plus':'2+','3plus':'3+'};
+    return m[v] || '-';
+  }
+
+  function enableActions(enabled){
+    el('btnReview').disabled = !enabled;
+    el('btnCopy').disabled = !enabled;
+    el('btnPdf').disabled = !enabled;
+  }
+
+  async function copySummary(){
+    if(!lastResult){ showToast('결과가 없습니다. Step 1에서 결과를 생성하세요.', false); return; }
+    const text = buildSummaryText(lastResult);
+    try{
+      if(navigator.clipboard && window.isSecureContext){
+        await navigator.clipboard.writeText(text);
+      } else {
+        fallbackCopyText(text);
+      }
+      showToast('요약문이 클립보드에 복사되었습니다.', true);
+    } catch(e){
+      fallbackCopyText(text);
+      showToast('복사 권한 문제로 대체 방식으로 복사했습니다.', true);
+    }
+  }
+
+  function fallbackCopyText(text){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly','');
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+
+  function printSummaryOnly(){
+    if(!lastResult){ showToast('결과가 없습니다. 먼저 결과를 생성하세요.', false); return; }
+    const now = new Date();
+    const stamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    el('printMeta').textContent = `생성일시: ${stamp}\n도구: 결과 확인 플로우(단일 HTML 데모)`;
+    el('printSummary').textContent = buildSummaryText(lastResult);
+    el('printPrecautions').textContent = PRECAUTIONS_TEXT;
+    window.print();
+  }
+
+  function openReviewModal(){ el('modalOverlay').classList.add('show'); }
+  function closeReviewModal(evt){
+    if(evt && evt.target && evt.target.id !== 'modalOverlay') return;
+    el('modalOverlay').classList.remove('show');
+  }
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') el('modalOverlay').classList.remove('show'); });
+
+  function showToast(msg, ok){
+    const t = el('toast');
+    t.textContent = msg;
+    t.className = `toast show ${ok ? 'ok' : 'no'}`;
+    setTimeout(()=>{ t.className = 'toast'; t.textContent = ''; }, 3200);
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, (m) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[m]));
+  }
+
+  function resetAll(){
+    ['gender','age','creatinine','potassium','dipstick','uacr','diabetes','aceArb','heartFailure'].forEach(id=>{ if(el(id)) el(id).value=''; });
+    el('proteinTest').value = 'dipstick';
+    toggleProteinInputs();
+    lastResult = null;
+    enableActions(false);
+    setStepUI(1);
+    el('summaryPreview').textContent = '';
+    el('summaryFull').textContent = '';
+    const t = el('toast'); t.className='toast'; t.textContent='';
+    el('result').innerHTML = `
+      <div class="status">
+        <h3>대기 중</h3>
+        <span class="pill">계산 전</span>
+      </div>
+      <div class="kpiItem">
+        <p class="kpiLabel">안내</p>
+        <p class="desc" style="margin:0;">Step 1에서 값을 입력한 뒤 이 화면으로 넘어오면 자동 계산됩니다.</p>
+      </div>
+    `;
+  }
+
+  // init
+  enableActions(false);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>케렌디아 급여 적용 확인</title>
+
+<style>
+:root{
+  --bg:#F9F3F5;
+  --card:#ffffff;
+  --left-bg:#F1F4FA;
+  --brand:#D1005D;
+  --brand-soft:#F2A2C1;
+  --text:#222;
+  --muted:#777;
+  --line:#E5E7EB;
+  --radius:28px;
+  --font:"Noto Sans KR", system-ui, sans-serif;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:var(--font);
+  background:var(--bg);
+  padding:32px 16px;
+  color:var(--text);
+}
+
+.container{
+  max-width:1080px;
+  margin:0 auto;
+}
+
+/* HEADER */
+.header{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:18px;
+}
+.logo{height:44px}
+.header h1{
+  margin:0;
+  font-size:20px;
+  font-weight:800;
+}
+.header p{
+  margin:4px 0 0;
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* STEPPER */
+.stepper{
+  background:#fff;
+  border-radius:999px;
+  padding:12px 24px;
+  display:flex;
+  justify-content:center;
+  gap:24px;
+  margin-bottom:28px;
+}
+.step{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  color:#bbb;
+}
+.step.active{color:var(--brand);font-weight:700}
+.step span{
+  width:22px;height:22px;border-radius:50%;
+  border:1px solid #ddd;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;
+}
+.step.active span{
+  background:var(--brand);
+  color:#fff;
+  border-color:var(--brand);
+}
+
+/* MAIN CARD */
+.main-card{
+  background:var(--card);
+  border-radius:36px;
+  display:flex;
+  overflow:hidden;
+  min-height:520px;
+  box-shadow:0 20px 50px rgba(0,0,0,.06);
+}
+
+/* LEFT */
+.left{
+  flex:1.1;
+  background:var(--left-bg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px;
+}
+.poster{
+  background:#fff;
+  border-radius:24px;
+  padding:32px 22px;
+  max-width:320px;
+  text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.05);
+}
+.poster img{width:100%;height:auto}
+.poster-desc{
+  margin:18px 0 6px;
+  font-size:13px;
+  color:#6b7280;
+}
+.poster-brand{
+  margin:0;
+  font-size:18px;
+  font-weight:900;
+}
+.poster-brand .with{
+  color:#9ca3af;
+  margin-right:6px;
+}
+.poster-brand .brand{
+  color:var(--brand);
+}
+
+/* RIGHT */
+.right{
+  flex:1;
+  padding:64px 56px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.right h2{
+  margin:0 0 10px;
+  font-size:24px;
+}
+.right p{
+  margin:0 0 32px;
+  font-size:14px;
+  color:var(--muted);
+  line-height:1.6;
+}
+label{
+  font-size:13px;
+  font-weight:600;
+  margin-bottom:8px;
+  display:block;
+}
+select,input{
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  font-size:15px;
+  margin-bottom:22px;
+}
+button{
+  padding:16px;
+  border-radius:14px;
+  border:none;
+  font-size:16px;
+  font-weight:800;
+  cursor:pointer;
+}
+.btn-primary{
+  background:var(--brand-soft);
+  color:#fff;
+}
+.btn-primary.active{
+  background:var(--brand);
+}
+.btn-secondary{
+  background:#eee;
+  color:#333;
+  margin-top:12px;
+}
+
+/* RESULT */
+.result-box{
+  background:#f9fafb;
+  padding:24px;
+  border-radius:16px;
+  margin-bottom:24px;
+}
+
+@media(max-width:900px){
+  .main-card{flex-direction:column}
+  .right{padding:40px 28px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <img src="kerendia-logo-transparent.png" class="logo">
+    <div>
+      <h1>케렌디아 급여 적용 확인</h1>
+      <p>CKD-EPI 2021 Equation 기반 eGFR 계산</p>
+    </div>
+  </div>
+
+  <div class="stepper">
+    <div class="step active" id="chip0"><span>0</span> 시작</div>
+    <div class="step" id="chip1"><span>1</span> 추가 입력</div>
+    <div class="step" id="chip2"><span>2</span> 결과</div>
+  </div>
+
+  <div class="main-card">
+
+    <!-- STEP 0 -->
+    <div id="step0" style="display:flex;width:100%">
+      <div class="left">
+        <div class="poster">
+          <img src="with-kerendia-hero-pink.png">
+          <p class="poster-desc">2형 당뇨병 동반 만성 신장치료는</p>
+          <p class="poster-brand">
+            <span class="with">with</span>
+            <span class="brand">케렌디아</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="right">
+        <h2>기본 정보 입력</h2>
+        <p>먼저 성별과 나이만 입력하세요.<br>다음 단계에서 추가 검사 수치를 입력합니다.</p>
+
+        <label>성별</label>
+        <select id="gender" onchange="checkStart()">
+          <option value="">선택하세요</option>
+          <option value="male">남성</option>
+          <option value="female">여성</option>
+        </select>
+
+        <label>나이</label>
+        <input type="number" id="age" placeholder="예: 62" oninput="checkStart()">
+
+        <button id="startBtn" class="btn-primary" disabled onclick="goStep(1)">
+          급여대상 확인하기
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div id="step1" style="display:none;width:100%">
+      <div class="right" style="margin:auto">
+        <h2>추가 입력</h2>
+
+        <div class="result-box">
+          <p><b>성별:</b> <span id="fixGender"></span></p>
+          <p><b>나이:</b> <span id="fixAge"></span></p>
+        </div>
+
+        <button class="btn-secondary" onclick="goStep(0)">
+          ← 성별/나이 수정하기
+        </button>
+
+        <button class="btn-primary active" onclick="goStep(2)">
+          결과 확인
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="step2" style="display:none;width:100%">
+      <div class="right" style="margin:auto">
+        <h2>결과</h2>
+        <p>다음 단계로 연동 예정입니다.</p>
+
+        <button class="btn-secondary" onclick="goStep(0)">
+          처음으로 돌아가기
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function checkStart(){
+  const g = gender.value;
+  const a = age.value;
+  startBtn.disabled = !(g && a);
+  startBtn.classList.toggle("active", g && a);
+}
+
+function goStep(n){
+  step0.style.display = n===0?"flex":"none";
+  step1.style.display = n===1?"flex":"none";
+  step2.style.display = n===2?"flex":"none";
+
+  chip0.classList.toggle("active",n===0);
+  chip1.classList.toggle("active",n===1);
+  chip2.classList.toggle("active",n===2);
+
+  if(n===1){
+    fixGender.textContent = gender.value==="male"?"남성":"여성";
+    fixAge.textContent = age.value+"세";
+  }
+}
+</script>
+
+</body>
+</html>

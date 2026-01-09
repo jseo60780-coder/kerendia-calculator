@@ -1,0 +1,378 @@
+import React, { useState } from 'react';
+import { AlertCircle, CheckCircle, FileText } from 'lucide-react';
+
+export default function KerendiaCalculator() {
+  const [formData, setFormData] = useState({
+    gender: '',
+    age: '',
+    creatinine: '',
+    potassium: '',
+    proteinTest: 'dipstick',
+    dipstick: '',
+    uacr: '',
+    diabetes: '',
+    aceArb: '',
+    heartFailure: ''
+  });
+
+  const [result, setResult] = useState(null);
+
+  const calculateEGFR = (gender, age, creatinine) => {
+    const K = gender === 'male' ? 0.9 : 0.7;
+    const alpha = gender === 'male' ? -0.302 : -0.241;
+    const scr = parseFloat(creatinine);
+    const ageNum = parseInt(age);
+    
+    const min = Math.min(scr / K, 1);
+    const max = Math.max(scr / K, 1);
+    
+    let eGFR = 142 * Math.pow(min, alpha) * Math.pow(max, -1.200) * Math.pow(0.9938, ageNum);
+    
+    if (gender === 'female') {
+      eGFR *= 1.012;
+    }
+    
+    return Math.round(eGFR);
+  };
+
+  const handleSubmit = () => {
+    const eGFR = calculateEGFR(formData.gender, formData.age, formData.creatinine);
+    
+    let eligible = true;
+    let reasons = [];
+    let diseaseCode = '';
+    
+    if (formData.diabetes !== 'yes') {
+      eligible = false;
+      reasons.push('제2형 당뇨병 환자가 아닙니다');
+    }
+    
+    if (formData.aceArb !== 'yes') {
+      eligible = false;
+      reasons.push('ACE억제제 또는 ARB를 4주 이상 투여하지 않았습니다');
+    }
+    
+    if (eGFR < 25) {
+      eligible = false;
+      reasons.push(`eGFR이 ${eGFR}로 25 미만입니다 (투여 시작 권장 안됨)`);
+    } else if (eGFR >= 75) {
+      eligible = false;
+      reasons.push(`eGFR이 ${eGFR}로 75 이상입니다`);
+    } else {
+      if (eGFR >= 60 && eGFR < 75) {
+        diseaseCode = 'N182 (만성신장병 2기)';
+      } else if (eGFR >= 30 && eGFR < 60) {
+        diseaseCode = 'N183 (만성신장병 3기)';
+      } else if (eGFR >= 25 && eGFR < 30) {
+        diseaseCode = 'N184 (만성신장병 4기)';
+      }
+    }
+    
+    if (formData.proteinTest === 'dipstick') {
+      if (!formData.dipstick || formData.dipstick === 'negative' || formData.dipstick === 'trace') {
+        eligible = false;
+        reasons.push('요 시험지봉 검사 결과가 1+ 미만입니다');
+      }
+    } else {
+      const uacrValue = parseFloat(formData.uacr);
+      if (isNaN(uacrValue) || uacrValue <= 300) {
+        eligible = false;
+        reasons.push('uACR이 300 mg/g 이하입니다');
+      }
+    }
+    
+    const potassiumValue = parseFloat(formData.potassium);
+    if (isNaN(potassiumValue)) {
+      eligible = false;
+      reasons.push('칼륨 수치를 입력해주세요');
+    } else if (potassiumValue > 4.8) {
+      eligible = false;
+      reasons.push(`칼륨 수치가 ${potassiumValue}로 4.8 mmol/L를 초과합니다`);
+    }
+    
+    if (formData.heartFailure === 'yes') {
+      eligible = false;
+      reasons.push('만성 심부전(NYHA class II~IV) 환자는 제외됩니다');
+    }
+    
+    setResult({
+      eligible,
+      eGFR,
+      reasons,
+      diseaseCode,
+      formData: {...formData}
+    });
+  };
+
+  const handleChange = (field, value) => {
+    setFormData({
+      ...formData,
+      [field]: value
+    });
+  };
+
+  const isFormValid = () => {
+    return formData.gender && formData.age && formData.creatinine && 
+           formData.potassium && formData.diabetes && formData.aceArb && 
+           formData.heartFailure &&
+           (formData.proteinTest === 'dipstick' ? formData.dipstick : formData.uacr);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+          <div className="flex items-center gap-3 mb-6">
+            <FileText className="w-8 h-8 text-indigo-600" />
+            <h1 className="text-3xl font-bold text-gray-800">케렌디아 적용 여부 판단 계산기</h1>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="border-b pb-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">기본 정보</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">성별</label>
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => handleChange('gender', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="male">남성</option>
+                    <option value="female">여성</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">나이</label>
+                  <input
+                    type="number"
+                    value={formData.age}
+                    onChange={(e) => handleChange('age', e.target.value)}
+                    min="45"
+                    max="85"
+                    placeholder="45-85세"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-b pb-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">검사 수치</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    혈청 크레아티닌 (mg/dL)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.creatinine}
+                    onChange={(e) => handleChange('creatinine', e.target.value)}
+                    step="0.1"
+                    placeholder={formData.gender === 'male' ? '0.9-3.0' : '0.7-2.4'}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    칼륨 (mmol/L)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.potassium}
+                    onChange={(e) => handleChange('potassium', e.target.value)}
+                    step="0.1"
+                    placeholder="예: 4.5"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-b pb-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">단백뇨/알부민뇨 검사</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">검사 방법</label>
+                  <select
+                    value={formData.proteinTest}
+                    onChange={(e) => handleChange('proteinTest', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="dipstick">요 시험지봉 검사 (Dipstick Test)</option>
+                    <option value="uacr">uACR (요알부민크레아티닌비)</option>
+                  </select>
+                </div>
+                
+                {formData.proteinTest === 'dipstick' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">결과</label>
+                    <select
+                      value={formData.dipstick}
+                      onChange={(e) => handleChange('dipstick', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="">선택하세요</option>
+                      <option value="negative">음성 (-)</option>
+                      <option value="trace">약양성 (±)</option>
+                      <option value="1plus">1+</option>
+                      <option value="2plus">2+</option>
+                      <option value="3plus">3+</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      uACR (mg/g)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.uacr}
+                      onChange={(e) => handleChange('uacr', e.target.value)}
+                      step="0.1"
+                      placeholder="예: 350"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">추가 조건</h2>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  제2형 당뇨병 환자입니까?
+                </label>
+                <select
+                  value={formData.diabetes}
+                  onChange={(e) => handleChange('diabetes', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">선택하세요</option>
+                  <option value="yes">예</option>
+                  <option value="no">아니오</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ACE억제제 또는 ARB를 최대허용 용량으로 4주 이상 투여 중입니까?
+                </label>
+                <select
+                  value={formData.aceArb}
+                  onChange={(e) => handleChange('aceArb', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">선택하세요</option>
+                  <option value="yes">예</option>
+                  <option value="no">아니오</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  만성 심부전(NYHA class II~IV) 환자입니까?
+                </label>
+                <select
+                  value={formData.heartFailure}
+                  onChange={(e) => handleChange('heartFailure', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">선택하세요</option>
+                  <option value="yes">예</option>
+                  <option value="no">아니오</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              disabled={!isFormValid()}
+              className={`w-full py-3 rounded-lg font-semibold transition-colors ${
+                isFormValid()
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              판정 결과 확인
+            </button>
+          </div>
+        </div>
+
+        {result && (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <div className={`flex items-center gap-3 mb-6 ${result.eligible ? 'text-green-600' : 'text-red-600'}`}>
+              {result.eligible ? (
+                <CheckCircle className="w-10 h-10" />
+              ) : (
+                <AlertCircle className="w-10 h-10" />
+              )}
+              <h2 className="text-2xl font-bold">
+                {result.eligible ? '케렌디아 적용 가능' : '케렌디아 적용 불가'}
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">계산된 eGFR</p>
+                <p className="text-2xl font-bold text-gray-800">{result.eGFR} mL/min/1.73㎡</p>
+              </div>
+
+              {result.diseaseCode && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">상병코드</p>
+                  <p className="text-lg font-semibold text-blue-800">{result.diseaseCode}</p>
+                </div>
+              )}
+
+              {!result.eligible && result.reasons.length > 0 && (
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-red-800 mb-2">적용 불가 사유:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {result.reasons.map((reason, index) => (
+                      <li key={index} className="text-sm text-red-700">{reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.eligible && (
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-green-800 mb-2">적용 기준 충족:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-green-700">
+                    <li>제2형 당뇨병 환자</li>
+                    <li>ACE억제제 또는 ARB 4주 이상 투여 중</li>
+                    <li>eGFR 25 이상 75 미만</li>
+                    <li>단백뇨 기준 충족</li>
+                    <li>칼륨 4.8 mmol/L 이하</li>
+                    <li>만성 심부전 없음</li>
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => window.print()}
+                  className="flex-1 bg-gray-600 text-white py-2 rounded-lg font-semibold hover:bg-gray-700 transition-colors"
+                >
+                  결과 출력
+                </button>
+                <button
+                  onClick={() => setResult(null)}
+                  className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                >
+                  새로운 검사
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
