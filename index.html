@@ -1,11 +1,805 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>Kerendia Calculator</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>케렌디아 급여 적용 확인</title>
+
+  <style>
+    :root{
+      --bg1: rgba(200,16,46,0.05);
+      --bg2: rgba(155,15,36,0.04);
+
+      --text:#1f2937;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+
+      --brand:#C8102E;
+      --brand2:#9B0F24;
+
+      --shadow: 0 18px 60px rgba(17,24,39,.10);
+      --radius: 22px;
+      --radius2: 16px;
+      --focus: 0 0 0 4px rgba(200,16,46,.14);
+
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      min-height:100vh;
+      padding: 12px 16px 40px;
+
+      background:
+        radial-gradient(circle at 18% 10%, var(--bg1), transparent 52%),
+        radial-gradient(circle at 88% 18%, var(--bg2), transparent 58%),
+        linear-gradient(180deg,#ffffff 0%, #fff7f8 40%, #fdeff1 75%, #f9d6dc 100%);
+    }
+
+    .wrap{max-width:1120px;margin:0 auto;}
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin: 10px 0 10px;gap:12px;}
+    .brand{display:flex;align-items:center;gap:14px;}
+    .logo-img{height:70px;width:auto;display:block;}
+    .title h1{margin:0;font-size:24px;letter-spacing:-.02em}
+    .title p{margin:6px 0 0;color:var(--muted);font-size:13px}
+
+    .pill{
+      font-size:12px;color:#7f1d1d;background:rgba(200,16,46,.08);
+      padding:8px 10px;border-radius:999px;border:1px solid rgba(200,16,46,.14);
+      white-space:nowrap; cursor:pointer; user-select:none;
+    }
+
+    .sticky-stepper{
+      position: sticky; top: 0; z-index: 50;
+      margin: 6px 0 14px; padding: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(229,231,235,.9);
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 30px rgba(17,24,39,.07);
+    }
+    .steps{display:flex;align-items:center;gap:14px;justify-content:center}
+    .step{
+      display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;
+      padding: 6px 10px;border-radius: 999px;
+      cursor:pointer; user-select:none;
+    }
+    .dot{
+      width:26px;height:26px;border-radius:999px;display:grid;place-items:center;
+      border:1px solid var(--line);background:#fff;font-weight:800;color:var(--muted);
+    }
+    .step.active{color:#111827}
+    .step.active .dot{
+      border-color:rgba(200,16,46,.55);
+      background:rgba(200,16,46,.10);
+      color:#7f1d1d;
+    }
+    .connector{width:56px;height:2px;background:rgba(229,231,235,.9);border-radius:999px;}
+    @media (max-width: 860px){ .connector{display:none} }
+
+    .shell{
+      background:rgba(255,255,255,.78);
+      border:1px solid rgba(255,255,255,.55);
+      box-shadow:var(--shadow);
+      border-radius:var(--radius);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+    }
+    .content{padding:22px;}
+    .grid{display:grid;grid-template-columns: 1fr 1fr;gap:16px;}
+    @media (max-width: 860px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background:#fff;border:1px solid rgba(229,231,235,.95);
+      border-radius:var(--radius2);padding:18px;
+      box-shadow: 0 10px 28px rgba(17,24,39,.06);
+    }
+
+    label{display:block;font-size:12px;color:#374151;margin:10px 0 6px; font-weight:700;}
+    input,select,textarea{
+      width:100%;
+      padding:11px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      outline:none;
+      background:#fff;
+      font-size:14px;
+    }
+    input:focus,select:focus,textarea:focus{
+      box-shadow:var(--focus);
+      border-color:rgba(200,16,46,.45)
+    }
+
+    .btn{
+      border:1px solid rgba(229,231,235,.95);
+      background:#fff;
+      color:#111827;
+      border-radius:14px;
+      padding:11px 14px;
+      font-weight:800;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      transition: 0.2s;
+    }
+    .btn.primary{
+      background:linear-gradient(135deg,var(--brand),var(--brand2));
+      color:#fff;border:none;
+    }
+    .btn.primary:disabled{opacity:.4;cursor:not-allowed;}
+    .btn:hover:not(:disabled){transform: translateY(-1px);}
+
+    .muted{color:var(--muted)}
+
+    .hero-grid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      min-height: 340px;
+      border-radius: 26px;
+      overflow:hidden;
+      border:1px solid rgba(229,231,235,.9);
+      background: rgba(255,255,255,.72);
+      box-shadow: 0 18px 55px rgba(17,24,39,.08);
+    }
+    @media (max-width: 920px){
+      .hero-grid{grid-template-columns:1fr; min-height:auto;}
+    }
+
+    .hero-left{
+      padding: 18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.20));
+    }
+
+    .poster-card{
+      width: min(360px, 92%);
+      background:#fff;
+      border-radius: 22px;
+      padding: 18px 18px 14px;
+      border:1px solid rgba(229,231,235,.9);
+      box-shadow: 0 16px 42px rgba(17,24,39,.08);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+    }
+
+    .poster-img{
+      width:100%;
+      aspect-ratio: 3 / 4;
+      border-radius: 18px;
+      border: 1px solid rgba(229,231,235,.85);
+      overflow:hidden;
+      background:#f6f7fb;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .poster-img img{
+      width:100%;
+      height:100%;
+      object-fit: cover;
+      object-position: center;
+      display:block;
+    }
+
+    .poster-caption{
+      text-align:center;
+      line-height:1.25;
+      padding: 2px 4px 0;
+    }
+    .poster-caption .line1{
+      font-size: 13px;
+      color:#6b7280;
+      font-weight:600;
+    }
+    .poster-caption .line2{
+      margin-top:6px;
+      font-size: 18px;
+      font-weight:900;
+      letter-spacing:-.02em;
+    }
+    .poster-caption .with{
+      color:#9ca3af;
+      font-weight:900;
+    }
+    .poster-caption .kr{
+      color: var(--brand);
+      font-weight:900;
+    }
+
+    .hero-right{
+      padding: 26px 26px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      background:
+        radial-gradient(circle at 30% 10%, rgba(200,16,46,.06), transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,.55), rgba(253,229,232,.35) 55%, rgba(246,185,194,.22) 100%);
+    }
+
+    .hero-right h2{margin:0 0 6px;font-size:22px;letter-spacing:-.02em}
+    .hero-right p{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.55}
+
+    textarea{
+      min-height:150px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    .badge{display:inline-flex;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800;margin-top:8px;align-items:center;gap:8px;}
+    .badge.good{background:#ecfdf5;color:#065f46;border:1px solid #10b981;}
+    .badge.bad{background:#fef2f2;color:#991b1b;border:1px solid #ef4444;}
+
+    #toast{
+      position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+      background:#111827;color:#fff;padding:10px 14px;border-radius:10px;
+      opacity:0;transition:0.25s;z-index:9999;font-size:13px;
+      box-shadow: 0 14px 40px rgba(17,24,39,.25);
+    }
+    #toast.show{opacity:1;}
+
+    .modal-backdrop{
+      position:fixed; inset:0;
+      background: rgba(17,24,39,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:10000;
+      padding:18px;
+    }
+    .modal{
+      width:min(980px, 100%);
+      background:#fff;
+      border-radius:18px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.25);
+      overflow:hidden;
+      border:1px solid rgba(229,231,235,.9);
+    }
+    .modal-head{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 16px;
+      border-bottom:1px solid rgba(229,231,235,.9);
+      background: #fafafa;
+    }
+    .modal-head .ttl{font-weight:900}
+    .modal-body{
+      max-height: 62vh;
+      overflow:auto;
+      padding:16px;
+      line-height:1.6;
+      color:#111827;
+      font-size:14px;
+    }
+    .modal-foot{
+      padding:12px 16px;
+      border-top:1px solid rgba(229,231,235,.9);
+      display:flex;justify-content:flex-end;gap:10px;
+      background:#fff;
+    }
+
+    .actions-center{
+      display:flex;
+      justify-content:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    .actions-center .btn{ min-width: 180px; }
+
+    .bottom-left-actions{
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+
+    /* ✅ print 모드 분리: 결과 vs 주의사항 */
+    @media print{
+      body{background:#fff !important; padding:0 !important;}
+      .sticky-stepper, .topbar, .pill, .btn, #toast, .modal-backdrop{display:none !important;}
+      .wrap{max-width:100% !important;}
+      .shell{box-shadow:none !important; border:none !important; border-radius:0 !important;}
+      .content{padding:0 !important;}
+
+      /* 기본은 다 숨김 */
+      .print-only, .notice-print-only{display:none !important;}
+
+      /* 결과 출력 모드 */
+      body.print-result .print-only{display:block !important;}
+
+      /* 주의사항 출력 모드 */
+      body.print-notice .notice-print-only{display:block !important;}
+
+      textarea{
+        height:auto !important;
+        min-height:0 !important;
+        overflow:visible !important;
+        border:none !important;
+        padding:0 !important;
+        resize:none !important;
+        white-space: pre-wrap !important;
+      }
+    }
+
+    .print-only{display:none;}
+    .notice-print-only{display:none;}
+  </style>
 </head>
+
 <body>
-  <h1>Kerendia Calculator</h1>
-  <p>GitHub Pages 배포 테스트 성공 🎉</p>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <img src="kerendia-logo-transparent.png" alt="Kerendia" class="logo-img">
+        <div class="title">
+          <h1>케렌디아 급여 적용 확인</h1>
+          <p>CKD-EPI 2021 Equation 기반 eGFR 계산 · 급여 기준 요약</p>
+        </div>
+      </div>
+      <div class="pill" id="refBtn" title="의료진 참고용 (예시)">의료진 참고용</div>
+    </div>
+
+    <div class="sticky-stepper">
+      <div class="steps">
+        <div class="step active" id="step0Chip" data-step="0"><span class="dot">0</span> 시작</div>
+        <div class="connector"></div>
+        <div class="step" id="step1Chip" data-step="1"><span class="dot">1</span> 추가 입력</div>
+        <div class="connector"></div>
+        <div class="step" id="step2Chip" data-step="2"><span class="dot">2</span> 결과</div>
+      </div>
+    </div>
+
+    <div class="shell">
+      <div class="content">
+
+        <!-- STEP 0 -->
+        <div id="step0">
+          <div class="hero-grid">
+            <div class="hero-left">
+              <div class="poster-card">
+                <div class="poster-img">
+                  <img src="with-kerendia-hero-pink.png" alt="with 케렌디아">
+                </div>
+                <div class="poster-caption">
+                  <div class="line1">2형 당뇨병 동반 만성 신장치료는</div>
+                  <div class="line2"><span class="with">with</span> <span class="kr">케렌디아</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hero-right">
+              <h2>기본 정보 입력</h2>
+              <p>성별과 나이를 입력하면 시작할 수 있습니다.</p>
+
+              <label>성별</label>
+              <select id="gender0">
+                <option value="">선택하세요</option>
+                <option value="male">남성</option>
+                <option value="female">여성</option>
+              </select>
+
+              <label>나이</label>
+              <input type="number" id="age0" placeholder="예: 62" inputmode="numeric">
+
+              <button class="btn primary" id="goExtraBtn" type="button" disabled style="margin-top:14px">
+                급여대상 확인하기
+              </button>
+              <p id="startHint" class="muted" style="font-size:12px; margin-top:10px">
+                성별과 나이를 모두 입력해 주세요.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 1 -->
+        <div id="step1" style="display:none;">
+          <div class="grid">
+            <div class="card">
+              <h3 style="margin:0 0 8px">기본 정보</h3>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                <div><label>성별</label><input id="genderFixed" readonly></div>
+                <div><label>나이</label><input id="ageFixed" readonly></div>
+              </div>
+
+              <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+                <button class="btn" id="editBasicBtn" type="button">기본정보 수정</button>
+                <button class="btn" id="backToStartBtn" type="button">이전으로</button>
+              </div>
+
+              <hr style="margin:18px 0; border:0; border-top:1px solid #eee">
+
+              <h3 style="margin:0 0 6px">검사 수치</h3>
+              <label>혈청 크레아티닌 (mg/dL)</label>
+              <input id="creatinine" type="number" step="0.1" placeholder="예: 1.2" inputmode="decimal">
+              <label>칼륨 (mmol/L)</label>
+              <input id="potassium" type="number" step="0.1" placeholder="예: 4.5" inputmode="decimal">
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 6px">단백뇨 및 동반 질환</h3>
+
+              <label>검사 방법</label>
+              <select id="proteinTest">
+                <option value="dipstick">Dipstick (요 시험지봉)</option>
+                <option value="uacr">uACR (요알부민/크레아티닌비)</option>
+              </select>
+
+              <div id="dipstickWrap">
+                <label>Dipstick 결과</label>
+                <select id="dipstick">
+                  <option value="">선택하세요</option>
+                  <option value="negative">음성 (-)</option>
+                  <option value="1plus">1+</option>
+                  <option value="2plus">2+</option>
+                  <option value="3plus">3+</option>
+                </select>
+              </div>
+
+              <div id="uacrWrap" style="display:none">
+                <label>uACR (mg/g)</label>
+                <input id="uacr" type="number" placeholder="예: 350" inputmode="decimal">
+              </div>
+
+              <label>제2형 당뇨병 여부</label>
+              <select id="diabetes">
+                <option value="">선택하세요</option>
+                <option value="yes">예</option>
+                <option value="no">아니오</option>
+              </select>
+
+              <label>표준요법(ACE/ARB) 4주 이상 투여</label>
+              <select id="aceArb">
+                <option value="">선택하세요</option>
+                <option value="yes">예</option>
+                <option value="no">아니오</option>
+              </select>
+
+              <button class="btn primary" id="goResultBtn" type="button" disabled style="margin-top:14px; width:100%">
+                결과 확인하기
+              </button>
+              <p class="muted" style="font-size:12px;margin:10px 0 0">
+                모든 항목을 입력하면 결과 확인이 가능합니다.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div id="step2" style="display:none;">
+          <div class="card">
+            <h2 id="resultTitle" style="margin:0">판정 결과</h2>
+            <div id="resultBadge" class="badge" style="margin-top:10px">계산 중...</div>
+
+            <div class="grid" style="margin-top:16px">
+              <div style="background:#f9fafb; padding:15px; border-radius:12px; border:1px solid rgba(229,231,235,.9)">
+                <div style="font-size:12px; color:#666">계산된 eGFR</div>
+                <div id="egfrView" style="font-size:24px; font-weight:900; color:var(--brand); margin-top:4px">-</div>
+              </div>
+              <div style="background:#f9fafb; padding:15px; border-radius:12px; border:1px solid rgba(229,231,235,.9)">
+                <div style="font-size:12px; color:#666">참고 상병코드</div>
+                <div id="codeView" style="font-size:24px; font-weight:900; color:#111827; margin-top:4px">-</div>
+              </div>
+            </div>
+
+            <div style="margin-top:16px">
+              <label>심사기준 요약문</label>
+              <textarea id="summaryText" readonly></textarea>
+              <div class="muted" style="font-size:12px;margin-top:6px">
+                ※ 출력 시에는 본 결과/요약문 중심으로 출력됩니다.
+              </div>
+            </div>
+
+            <div class="actions-center">
+              <button class="btn" id="copyBtn" type="button">내용 복사</button>
+              <button class="btn" id="printBtn" type="button">출력 하기</button>
+              <button class="btn" id="noticeBtn" type="button">환자 복용 주의사항</button>
+            </div>
+
+            <div class="bottom-left-actions">
+              <button class="btn" id="editBtn" type="button">수정하기</button>
+              <button class="btn primary" id="restartBtn" type="button">새로 시작</button>
+            </div>
+          </div>
+
+          <!-- 결과 print 전용 -->
+          <div class="print-only" id="printArea">
+            <div style="padding:18px 0 0">
+              <h2 style="margin:0 0 8px">판정 결과</h2>
+              <div style="margin:0 0 10px; font-weight:800" id="printBadgeText"></div>
+
+              <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px">
+                <div style="min-width:240px">
+                  <div style="font-size:12px;color:#666">계산된 eGFR</div>
+                  <div style="font-size:22px;font-weight:900;color:var(--brand)" id="printEgfr"></div>
+                </div>
+                <div style="min-width:240px">
+                  <div style="font-size:12px;color:#666">참고 상병코드</div>
+                  <div style="font-size:22px;font-weight:900" id="printCode"></div>
+                </div>
+              </div>
+
+              <div style="font-size:12px;color:#666;margin:12px 0 6px;font-weight:800">심사기준 요약문</div>
+              <div id="printSummary" style="white-space:pre-wrap; font-size:13px; line-height:1.55;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">복사되었습니다.</div>
+
+  <!-- ✅ 주의사항 print 전용 영역 (★모달 밖으로 뺌★) -->
+  <div class="notice-print-only" id="noticePrintArea">
+    <div style="padding:18px 0 0">
+      <h2 style="margin:0 0 10px">환자 복용 주의사항</h2>
+      <div id="noticePrintContent" style="white-space:pre-wrap; font-size:13px; line-height:1.6;"></div>
+    </div>
+  </div>
+
+  <!-- 주의사항 모달 -->
+  <div class="modal-backdrop" id="noticeModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="noticeTitle">
+      <div class="modal-head">
+        <div class="ttl" id="noticeTitle">환자 복용 주의사항 (PDF 출력 가능)</div>
+        <button class="btn" id="closeNoticeBtn" type="button">닫기</button>
+      </div>
+      <div class="modal-body" id="noticeBody">
+        <div style="font-weight:900; margin-bottom:8px;">환자 복용 주의사항</div>
+        <ul>
+          <li>케렌디아(Finerenone)는 신장 보호 및 심혈관 질환 예방을 위한 약제로, 2형 당뇨병과 만성신장병(CKD) 환자에서 사용됩니다.</li>
+          <li>복용 중 고칼륨혈증의 위험이 있으므로 정기적인 혈액검사가 필요합니다.</li>
+          <li><b>고칼륨혈증 증상</b>: 근육 약화, 피로감, 무기력, 심장이 두근거리거나 느려지는 느낌(부정맥). 이러한 증상이 나타나면 즉시 의료진에게 알리십시오.</li>
+          <li>고혈압약(RAAS억제제)과 병용 시 전해질 이상을 모니터링해야 합니다.</li>
+          <li>이상 증상 시 즉시 의료진에 상담하세요.</li>
+          <li>의사 지시 없이 복용을 중단하거나 증량하지 마세요.</li>
+        </ul>
+
+        <div style="margin:14px 0 8px; font-weight:900;">✓ CKD 환자는 정기적인 혈액검사로 혈중 칼륨 농도를 확인하고, 칼륨 섭취 조절이 필요합니다.</div>
+
+        <div style="margin:10px 0 6px; font-weight:900;">🍽 칼륨 섭취를 줄이는 방법:</div>
+        <ol>
+          <li>야채는 끓는 물에 데치기 (채소 무게의 4~5배 이상 물 사용)</li>
+          <li>얇게 썬 후 찬물에 2시간 담갔다가 물을 버리고 조리</li>
+          <li>채소 껍질과 줄기 제거 후 섭취</li>
+        </ol>
+
+        <div style="margin:10px 0 6px; font-weight:900;">⚠️ 칼륨이 많은 식품 주의:</div>
+        <ul>
+          <li>감자, 고구마, 토마토, 바나나, 키위, 멜론</li>
+          <li>시금치, 미역, 다시마, 콩, 견과류</li>
+          <li>초콜릿, 커피, 두유, 주스, 인스턴트국, 홍삼젤리 등</li>
+        </ul>
+
+        <div style="margin:10px 0 6px; font-weight:900;">💧 수분 섭취</div>
+        <div>수분 섭취는 신장 상태에 따라 의사와 상담하여 결정하세요.</div>
+
+        <div class="muted" style="margin-top:12px; font-size:12px;">
+          (출처: CKD in T2D Awareness Symposium, Kerendia & 종근당)
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn primary" id="noticePrintBtn" type="button">PDF 출력</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const state = { gender: "", age: null };
+
+    function toast(msg="완료되었습니다.") {
+      const t = $("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(()=>t.classList.remove("show"), 1400);
+    }
+
+    function goStep(idx) {
+      $("step0").style.display = idx === 0 ? "block" : "none";
+      $("step1").style.display = idx === 1 ? "block" : "none";
+      $("step2").style.display = idx === 2 ? "block" : "none";
+
+      $("step0Chip").classList.toggle("active", idx === 0);
+      $("step1Chip").classList.toggle("active", idx === 1);
+      $("step2Chip").classList.toggle("active", idx === 2);
+
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    function canGoToStep(step) {
+      if(step === 0) return true;
+      if(step === 1) return !!(state.gender && state.age);
+      if(step === 2) return !!($("summaryText").value && $("summaryText").value.trim().length > 0);
+      return false;
+    }
+
+    function handleStepperClick(targetStep) {
+      const cur = $("step2").style.display === "block" ? 2 : ($("step1").style.display === "block" ? 1 : 0);
+      if(targetStep < cur) { goStep(targetStep); return; }
+      if(!canGoToStep(targetStep)){
+        toast("해당 단계로 이동하려면 이전 입력을 완료해 주세요.");
+        return;
+      }
+      goStep(targetStep);
+    }
+
+    ["step0Chip","step1Chip","step2Chip"].forEach(id=>{
+      $(id).addEventListener("click", ()=>{
+        handleStepperClick(parseInt($(id).dataset.step,10));
+      });
+    });
+
+    function updateStartUI() {
+      const g = $("gender0").value;
+      const a = $("age0").value;
+      const ok = (g !== "" && a !== "");
+      $("goExtraBtn").disabled = !ok;
+      $("startHint").textContent = ok ? "준비되었습니다. 버튼을 눌러주세요." : "성별과 나이를 모두 입력해 주세요.";
+    }
+
+    $("gender0").addEventListener("change", updateStartUI);
+    $("age0").addEventListener("input", updateStartUI);
+
+    $("goExtraBtn").addEventListener("click", ()=>{
+      state.gender = $("gender0").value;
+      state.age = parseInt($("age0").value, 10);
+
+      $("genderFixed").value = state.gender === "male" ? "남성" : "여성";
+      $("ageFixed").value = state.age + "세";
+
+      goStep(1);
+      updateExtraUI();
+    });
+
+    function toggleProteinInput() {
+      const isDip = $("proteinTest").value === "dipstick";
+      $("dipstickWrap").style.display = isDip ? "block" : "none";
+      $("uacrWrap").style.display = isDip ? "none" : "block";
+      updateExtraUI();
+    }
+    $("proteinTest").addEventListener("change", toggleProteinInput);
+
+    function updateExtraUI() {
+      const scr = $("creatinine").value;
+      const k = $("potassium").value;
+      const db = $("diabetes").value;
+      const ace = $("aceArb").value;
+
+      let protOk = false;
+      if ($("proteinTest").value === "dipstick") protOk = $("dipstick").value !== "";
+      else protOk = $("uacr").value !== "";
+
+      const ok = (scr && k && db && ace && protOk);
+      $("goResultBtn").disabled = !ok;
+    }
+
+    ["creatinine","potassium","diabetes","aceArb","dipstick","uacr"].forEach(id=>{
+      const el = $(id);
+      el.addEventListener(el.tagName === "SELECT" ? "change" : "input", updateExtraUI);
+    });
+
+    $("backToStartBtn").addEventListener("click", ()=>goStep(0));
+    $("editBasicBtn").addEventListener("click", ()=>{
+      $("gender0").value = state.gender || "";
+      $("age0").value = state.age ?? "";
+      updateStartUI();
+      goStep(0);
+    });
+
+    function calcEGFR(gender, age, scr) {
+      const kappa = (gender === "female") ? 0.7 : 0.9;
+      const alpha = (gender === "female") ? -0.241 : -0.302;
+      const genderMod = (gender === "female") ? 1.012 : 1.0;
+
+      const minScr = Math.min(scr / kappa, 1);
+      const maxScr = Math.max(scr / kappa, 1);
+
+      const egfr = 142 * Math.pow(minScr, alpha) * Math.pow(maxScr, -1.200) * Math.pow(0.9938, age) * genderMod;
+      return Math.round(egfr);
+    }
+
+    function calculateAndShow() {
+      const scr = parseFloat($("creatinine").value);
+      const k = parseFloat($("potassium").value);
+
+      const dbYes = $("diabetes").value === "yes";
+      const aceYes = $("aceArb").value === "yes";
+
+      const egfr = calcEGFR(state.gender, state.age, scr);
+
+      let protText = "";
+      if ($("proteinTest").value === "dipstick") protText = "Dipstick " + $("dipstick").value;
+      else protText = "uACR " + $("uacr").value + " mg/g";
+
+      const isEligible = (dbYes && aceYes && egfr >= 25 && k <= 4.8);
+
+      $("egfrView").textContent = egfr + " mL/min";
+      $("codeView").textContent = (egfr < 60 ? "N18.3" : "N18.2");
+
+      const badge = $("resultBadge");
+      if(isEligible) { badge.textContent = "급여 인정 기준 충족"; badge.className = "badge good"; }
+      else { badge.textContent = "급여 불충족 / 확인 필요"; badge.className = "badge bad"; }
+
+      const gTxt = (state.gender === "male" ? "남성" : "여성");
+      const summary =
+`[${isEligible ? "급여 적정" : "급여 주의"}]
+기본정보: ${gTxt}, ${state.age}세
+검사: Cr ${scr} mg/dL, K ${k} mmol/L, eGFR ${egfr} mL/min
+동반: T2D ${dbYes ? "예" : "아니오"}, ACE/ARB 4주 이상 ${aceYes ? "예" : "아니오"}
+단백뇨: ${protText}
+
+판정: eGFR 기준 ${egfr>=25 ? "충족(≥25)" : "미달(<25)"}, K 기준 ${k<=4.8 ? "충족(≤4.8)" : "초과(>4.8)"},
+T2D/ACE-ARB 조건 ${dbYes && aceYes ? "충족" : "미충족"}.
+`;
+      $("summaryText").value = summary;
+
+      $("printBadgeText").textContent = badge.textContent;
+      $("printEgfr").textContent = $("egfrView").textContent;
+      $("printCode").textContent = $("codeView").textContent;
+      $("printSummary").textContent = summary;
+
+      goStep(2);
+    }
+
+    $("goResultBtn").addEventListener("click", calculateAndShow);
+
+    $("copyBtn").addEventListener("click", async ()=>{
+      try{
+        await navigator.clipboard.writeText($("summaryText").value);
+        toast("복사되었습니다.");
+      }catch(e){
+        $("summaryText").select();
+        document.execCommand("copy");
+        toast("복사되었습니다.");
+      }
+    });
+
+    /* ✅ 출력하기: 결과/요약문만 */
+    $("printBtn").addEventListener("click", ()=>{
+      document.body.classList.remove("print-notice");
+      document.body.classList.add("print-result");
+      window.print();
+      document.body.classList.remove("print-result");
+    });
+
+    function openNotice(){ $("noticeModal").style.display = "flex"; }
+    function closeNotice(){ $("noticeModal").style.display = "none"; }
+    $("noticeBtn").addEventListener("click", openNotice);
+    $("closeNoticeBtn").addEventListener("click", closeNotice);
+    $("noticeModal").addEventListener("click", (e)=>{ if(e.target === $("noticeModal")) closeNotice(); });
+
+    /* ✅ 주의사항 PDF 출력: 주의사항만 */
+    $("noticePrintBtn").addEventListener("click", ()=>{
+      $("noticePrintContent").textContent = $("noticeBody").innerText.trim();
+      closeNotice();
+
+      document.body.classList.remove("print-result");
+      document.body.classList.add("print-notice");
+      window.print();
+      document.body.classList.remove("print-notice");
+    });
+
+    $("editBtn").addEventListener("click", ()=>goStep(1));
+    $("restartBtn").addEventListener("click", ()=>location.reload());
+
+    $("refBtn").addEventListener("click", ()=>toast("참고용 UI입니다."));
+
+    updateStartUI();
+    toggleProteinInput();
+  </script>
 </body>
 </html>
